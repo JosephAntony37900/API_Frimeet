@@ -2,6 +2,8 @@ from . import db
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 import os
+from datetime import datetime
+from src.models.userRol import Role
 
 bcrypt = Bcrypt()
 load_dotenv()
@@ -15,6 +17,7 @@ class User(db.Model):
     nombre = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(200), nullable=False)
+    premium_expiration = db.Column(db.DateTime, nullable=True) #pal premium
 
     role = db.relationship('Role', backref='users')
 
@@ -26,6 +29,17 @@ class User(db.Model):
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
+    
+    def verificar_premium(self):
+        # Verifica si la membresía premium ha caducado
+        if self.premium_expiration and datetime.utcnow() > self.premium_expiration:
+            # Busca el rol "Usuarios"
+            rol_nombre = "Usuarios"
+            rol = Role.query.filter_by(nombre=rol_nombre).first()
+            if rol:
+                self.id_Rol = rol.id
+                self.premium_expiration = None
+                db.session.commit()
 
     def __repr__(self):
         return f'<User {self.nombre}>'

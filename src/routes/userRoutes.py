@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from src.controllers.userController import crear_usuario, crear_usuario_base, login_usuario, obtener_usuario,eliminar_usuario
+from src.controllers.userController import crear_usuario, crear_usuario_base, login_usuario, obtener_usuario,eliminar_usuario, actualizar_rol_premium
 from flask_jwt_extended import jwt_required
 
 usuario_blueprint = Blueprint('usuarios', __name__)
@@ -28,4 +28,11 @@ def obtener_usuario_ruta():
 @jwt_required()
 def eliminar_usuario_ruta(user_id):
     return eliminar_usuario(user_id)
+
+@usuario_blueprint.route('/users/<int:user_id>/premium', methods=['POST'])
+@jwt_required()
+def actualizar_rol_premium_ruta(user_id):
+    data = request.get_json()
+    activar = data.get('activar')
+    return actualizar_rol_premium(user_id, activar)
 

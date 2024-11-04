@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 from config import config
 from src.routes.userRol import roles_blueprint
 from src.routes.userRoutes import usuario_blueprint
@@ -10,6 +11,7 @@ def create_app(): #error aqui
     app = Flask(__name__)
     app.config.from_object(config['development'])
     db.init_app(app)
+    migrate= Migrate(app, db)
     jwt = JWTManager(app)
     with app.app_context():
         db.create_all()

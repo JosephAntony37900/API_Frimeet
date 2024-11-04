@@ -2,7 +2,7 @@ from flask import jsonify
 from src.models.user import User, db
 from src.models.userRol import Role
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-
+from datetime import datetime, timedelta
 
 def crear_usuario(data):
     nombre = data.get('nombre')
@@ -70,6 +70,10 @@ def login_usuario(data):
         return jsonify({"mensaje": "Credenciales inválidas"}), 401
     if not user.check_password(password):
         return jsonify({"mensaje": "Credenciales inválidas"}), 401
+    
+    # Verifica el estado de la membresía premium antes de iniciar sesión
+    user.verificar_premium()
+    
     access_token = create_access_token(identity=user.id)
     return jsonify({"mensaje": "Inicio de sesión exitoso", "token": access_token}), 200
 
@@ -95,3 +99,27 @@ def eliminar_usuario(user_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({"mensaje": "Usuario eliminado"}), 200
+
+@jwt_required()
+def actualizar_rol_premium(user_id, activar):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"mensaje": "Usuario no encontrado"}), 404
+    
+    if activar:
+        rol_nombre = "Premium"
+        rol = Role.query.filter_by(nombre=rol_nombre).first()
+        if not rol:
+            return jsonify({"mensaje": "Rol 'Premium' no encontrado"}), 400
+        user.id_Rol = rol.id
+        user.premium_expiration = datetime.utcnow() + timedelta(days=30)
+    else:
+        rol_nombre = "Usuarios"
+        rol = Role.query.filter_by(nombre=rol_nombre).first()
+        if not rol:
+            return jsonify({"mensaje": "Rol 'Usuarios' no encontrado"}), 400
+        user.id_Rol = rol.id
+        user.premium_expiration = None
+
+    db.session.commit()
+    return jsonify({"mensaje": f"Rol de usuario actualizado a {rol.nombre}"}), 200
