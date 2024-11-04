@@ -8,12 +8,13 @@ def crear_usuario(data):
     nombre = data.get('nombre')
     email = data.get('email')
     password = data.get('password')
-    rol_nombre = data.get('rol')
     
+    # Busca el rol "Usuarios"
+    rol_nombre = "Usuarios"
     rol = Role.query.filter_by(nombre=rol_nombre).first()
     
     if not rol:
-        return jsonify({"mensaje": "Rol no encontrado"}), 400
+        return jsonify({"mensaje": "Rol 'Usuarios' no encontrado"}), 400
     
     if not nombre or not email or not password:
         return jsonify({"mensaje": "Faltan campos obligatorios"}), 400
@@ -36,14 +37,20 @@ def crear_usuario_base(data):
     nombre = data.get('nombre')
     email = data.get('email')
     password = data.get('password')
-    rol_nombre = data.get('rol')
-    rol= Role.query.filter_by(nombre=rol_nombre).first()
+    
+    # Busca el rol "Usuarios"
+    rol_nombre = "Usuarios"
+    rol = Role.query.filter_by(nombre=rol_nombre).first()
+
     if not rol:
-        return jsonify({"mensaje": "Rol no encontrado"}), 400
+        return jsonify({"mensaje": "Rol 'Usuarios' no encontrado"}), 400
+    
     if not nombre or not email or not password:
         return jsonify({"mensaje": "Faltan campos obligatorios"}), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({"mensaje": "El email ya está registrado"}), 400
+
     nuevo_usuario = User(nombre=nombre, email=email, password=password, id_Rol=rol.id)
     db.session.add(nuevo_usuario)
     db.session.commit()
