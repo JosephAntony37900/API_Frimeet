@@ -1,0 +1,16 @@
+blinker
+click
+flask-sqlalchemy
+greenlet
+importlib-metadata
+itsdangerous
+jinja2
+markupsafe
+psycopg2
+python-dotenv
+sqlalchemy
+werkzeug
+zipp
+
+flask
+typing-extensions
