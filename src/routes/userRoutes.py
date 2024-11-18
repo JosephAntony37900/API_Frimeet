@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from src.controllers.userController import crear_usuario, crear_usuario_base, login_usuario, obtener_usuario,eliminar_usuario, actualizar_rol_premium
+from src.controllers.userController import crear_usuario, crear_usuario_base, login_usuario, obtener_usuario,eliminar_usuario, actualizar_rol_premium, actualizar_usuario
 from flask_jwt_extended import jwt_required
 
 usuario_blueprint = Blueprint('usuarios', __name__)
@@ -36,3 +36,7 @@ def actualizar_rol_premium_ruta(user_id):
     activar = data.get('activar')
     return actualizar_rol_premium(user_id, activar)
 
+@usuario_blueprint.route('/users/<int:user_id>/edit', methods=['PUT']) 
+@jwt_required() 
+def actualizar_usuario_ruta(user_id): 
+    return actualizar_usuario(user_id)
