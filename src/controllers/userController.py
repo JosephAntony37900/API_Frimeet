@@ -1,8 +1,11 @@
-from flask import jsonify
+from flask import jsonify, request
 from src.models.user import User, db
 from src.models.userRol import Role
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
+from flask_bcrypt import Bcrypt
+
+bcrypt = Bcrypt()
 
 def crear_usuario(data):
     nombre = data.get('nombre')
@@ -74,7 +77,7 @@ def login_usuario(data):
     # Verifica el estado de la membresía premium antes de iniciar sesión
     user.verificar_premium()
     
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity={"sub": user.id, "id_Rol": user.id_Rol, "nombre": user.nombre}) 
     return jsonify({"mensaje": "Inicio de sesión exitoso", "token": access_token}), 200
 
 @jwt_required()
@@ -123,3 +126,26 @@ def actualizar_rol_premium(user_id, activar):
 
     db.session.commit()
     return jsonify({"mensaje": f"Rol de usuario actualizado a {rol.nombre}"}), 200
+
+@jwt_required()
+def actualizar_usuario(user_id):
+    data = request.get_json()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"mensaje": "Usuario no encontrado"}), 404
+    
+    nombre = data.get('nombre')
+    email = data.get('email')
+    password = data.get('password')
+    
+    if nombre:
+        user.nombre = nombre
+    if email:
+        user.email = email
+    if password:
+        user.password = bcrypt.generate_password_hash(password).decode('utf-8')
+    
+    db.session.commit()
+    
+    return jsonify({"mensaje": "Usuario actualizado", "id": user.id, "nombre": user.nombre, "email": user.email}), 200
+
