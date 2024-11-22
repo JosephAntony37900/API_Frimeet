@@ -1,14 +1,15 @@
 from flask import jsonify
+from pymongo import MongoClient
 from src.models.outing import Outing, db
 from flask_jwt_extended import jwt_required, get_jwt_identity
-# Comentado por ahora
-# from pymongo import MongoClient
 import os
+from bson.objectid import ObjectId
 
-# Configuración para mongoDB
-# mongo_client = MongoClient(os.getenv('MONGO_URI'))
-# mongo_db = mongo_client[os.getenv('MONGO_DB_NAME')]
-# place_collection = mongo_db['places']
+
+mongo_client = MongoClient(os.getenv('MONGODB_URI'))
+mongo_db = mongo_client[os.getenv('MONGO_DB_NAME')]
+place_collection = mongo_db['places']
+
 
 @jwt_required()
 def crear_salida(data):

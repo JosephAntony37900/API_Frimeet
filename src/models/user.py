@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from src.models.userRol import Role
+from sqlalchemy.dialects.postgresql import ARRAY  # Importar ARRAY para listas
 
 bcrypt = Bcrypt()
 load_dotenv()
@@ -13,11 +14,15 @@ class User(db.Model):
     __tablename__ = 'users'
     __table_args__ = {'schema': schema_name}
     id = db.Column(db.Integer, primary_key=True)
-    id_Rol = db.Column(db.Integer, db.ForeignKey(f'{schema_name}.roles.id'), nullable=False)  # Especifica el esquema
+    id_Rol = db.Column(db.Integer, db.ForeignKey(f'{schema_name}.roles.id'), nullable=False)
     nombre = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(200), nullable=False)
-    premium_expiration = db.Column(db.DateTime, nullable=True) #pal premium
+    premium_expiration = db.Column(db.DateTime, nullable=True)  # Para premium
+    # Pa recordatorios
+    eventReminder = db.Column(ARRAY(db.String), default=[])
+    ContentReminder = db.Column(ARRAY(db.String), default=[])
+    nameReminder = db.Column(ARRAY(db.String), default=[])
 
     role = db.relationship('Role', backref='users')
 
@@ -26,14 +31,15 @@ class User(db.Model):
         self.email = email
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
         self.id_Rol = id_Rol
+        self.eventReminder = []
+        self.ContentReminder = []
+        self.nameReminder = []
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
     
     def verificar_premium(self):
-        # Verifica si la membresía premium ha caducado
         if self.premium_expiration and datetime.utcnow() > self.premium_expiration:
-            # Busca el rol "Usuarios"
             rol_nombre = "Usuarios"
             rol = Role.query.filter_by(nombre=rol_nombre).first()
             if rol:

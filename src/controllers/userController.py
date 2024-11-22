@@ -11,8 +11,7 @@ def crear_usuario(data):
     nombre = data.get('nombre')
     email = data.get('email')
     password = data.get('password')
-    
-    # Busca el rol "Usuarios"
+    # Busca el rol "usuarios"
     rol_nombre = "Usuarios"
     rol = Role.query.filter_by(nombre=rol_nombre).first()
     
@@ -74,7 +73,7 @@ def login_usuario(data):
     if not user.check_password(password):
         return jsonify({"mensaje": "Credenciales inválidas"}), 401
     
-    # Verifica el estado de la membresía premium antes de iniciar sesión
+    # Verifica el estado de la membresia premium antes de iniciar sesion
     user.verificar_premium()
     
     access_token = create_access_token(identity={"sub": user.id, "id_Rol": user.id_Rol, "nombre": user.nombre}) 
@@ -147,5 +146,56 @@ def actualizar_usuario(user_id):
     
     db.session.commit()
     
-    return jsonify({"mensaje": "Usuario actualizado", "id": user.id, "nombre": user.nombre, "email": user.email}), 200
+    return jsonify({"mensaje": "Usuario actualizado",
+                    "id": user.id, 
+                    "nombre": user.nombre, 
+                    "email": user.email}), 200
 
+@jwt_required()
+def add_reminder(user_id):
+    data = request.get_json()
+    eventReminder = data.get('eventReminder')
+    ContentReminder = data.get('ContentReminder')
+    nameReminder = data.get('nameReminder')
+
+    if not eventReminder or not ContentReminder or not nameReminder:
+        return jsonify({"mensaje": "Faltan campos obligatorios"}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"mensaje": "Usuario no encontrado"}), 404
+
+    # Asegúrate de que las listas están inicializadas
+    if user.eventReminder is None:
+        user.eventReminder = []
+    if user.ContentReminder is None:
+        user.ContentReminder = []
+    if user.nameReminder is None:
+        user.nameReminder = []
+
+    print(f"Usuario encontrado: {user.email}")
+
+    user.eventReminder.append(eventReminder)
+    user.ContentReminder.append(ContentReminder)
+    user.nameReminder.append(nameReminder)
+    db.session.commit()
+
+    return jsonify({"mensaje": "Recordatorio añadido exitosamente"}), 200
+
+@jwt_required()
+def obtener_recordatorios(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"mensaje": "Usuario no encontrado"}), 404
+
+    # Crear una lista de recordatorios combinando los tres atributos
+    recordatorios = [
+        {
+            "eventReminder": user.eventReminder[i],
+            "contentReminder": user.ContentReminder[i],
+            "nameReminder": user.nameReminder[i]
+        }
+        for i in range(len(user.eventReminder))
+    ]
+
+    return jsonify({"recordatorios": recordatorios}), 200
