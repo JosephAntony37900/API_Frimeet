@@ -1,45 +1,53 @@
-from flask import jsonify
+from flask import jsonify, request
 from src.models.tag import Tag, db
 from flask_jwt_extended import jwt_required
 import os
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 
-# Configurar la conexión a MongoDB
-# from pymongo import MongoClient
-# mongo_client = MongoClient(os.getenv('MONGO_URI'))
-# mongo_db = mongo_client[os.getenv('MONGO_DB_NAME')]
-# place_collection = mongo_db['places']
+# Configuración para MongoDB
+mongo_client = MongoClient(os.getenv('MONGODB_URI'))
+mongo_db = mongo_client[os.getenv('MONGO_DB_NAME')]
+event_collection = mongo_db['events']
+place_collection = mongo_db['places']
 
-# Crear una nueva etiqueta
-def crear_etiqueta(data):
-    nombre = data.get('nombre')
-    if not nombre:
-        return jsonify({"mensaje": "Nombre de etiqueta es requerido"}), 400
+def crear_etiquetas(data):
+    if not isinstance(data, list):
+        return jsonify({"mensaje": "Se espera una lista de etiquetas"}), 400
 
-    if Tag.query.filter_by(nombre=nombre).first():
-        return jsonify({"mensaje": "La etiqueta ya existe"}), 400
+    etiquetas_creadas = []
+    for item in data:
+        tagsEvent = item.get('tagsEvent')
+        tagsPlace = item.get('tagsPlace')
 
-    nueva_etiqueta = Tag(nombre=nombre)
-    db.session.add(nueva_etiqueta)
-    db.session.commit()
-    
-    return jsonify({"mensaje": "Etiqueta creada", "idTag": nueva_etiqueta.id}), 201
+        if not tagsEvent and not tagsPlace:
+            return jsonify({"mensaje": "Al menos una de tagsEvent o tagsPlace es requerida"}), 400
 
-# Asignar un lugar a una etiqueta (se agrega el ID del lugar de MongoDB)
+        nueva_etiqueta = Tag(tagsEvent=tagsEvent, tagsPlace=tagsPlace)
+        db.session.add(nueva_etiqueta)
+        db.session.commit()
+        etiquetas_creadas.append({"mensaje": "Etiqueta creada", "idTag": nueva_etiqueta.id})
+
+    return jsonify(etiquetas_creadas), 201
+
+# Obtener eventos por etiqueta consultando en MongoDB
 @jwt_required()
-def asignar_etiqueta_a_lugar(tag_id, place_id):
+def obtener_eventos_por_etiqueta(tag_id):
     etiqueta = Tag.query.get(tag_id)
     
     if not etiqueta:
         return jsonify({"mensaje": "Etiqueta no encontrada"}), 404
-    
-    # Comentado por ahora
-    # if place_id in etiqueta.place_ids:
-    #    return jsonify({"mensaje": "El lugar ya tiene esta etiqueta"}), 400
 
-    # etiqueta.place_ids.append(place_id)
-    db.session.commit()
-    
-    return jsonify({"mensaje": "Etiqueta asignada al lugar"}), 200
+    # Obtener eventos desde MongoDB con la etiqueta
+    try:
+        eventos = event_collection.find({"tag": etiqueta.tagsEvent})
+        eventos_list = []
+        for evento in eventos:
+            evento["_id"] = str(evento["_id"])
+            eventos_list.append(evento)
+        return jsonify({"etiqueta": etiqueta.tagsEvent, "eventos": eventos_list}), 200
+    except Exception as e:
+        return jsonify({"mensaje": f"Error al consultar eventos: {e}"}), 500
 
 # Obtener lugares por etiqueta consultando en MongoDB
 @jwt_required()
@@ -48,15 +56,18 @@ def obtener_lugares_por_etiqueta(tag_id):
     
     if not etiqueta:
         return jsonify({"mensaje": "Etiqueta no encontrada"}), 404
-    
-    # Comentado por ahora
-    # Obtener los lugares de MongoDB usando los ids guardados en `place_ids`
-    # lugares = list(place_collection.find({"_id": {"$in": etiqueta.place_ids}}))
 
-    # Formatear la respuesta
-    # lugares_formateados = [{"idPlace": lugar["_id"], "nombre": lugar["nombre"]} for lugar in lugares]
-    
-    return jsonify({"etiqueta": etiqueta.nombre, "lugares": []}), 200
+    # Obtener lugares desde MongoDB con la etiqueta
+    try:
+        lugares = place_collection.find({"tag": etiqueta.tagsPlace})
+        lugares_list = []
+        for lugar in lugares:
+            lugar["_id"] = str(lugar["_id"])
+            lugares_list.append(lugar)
+        return jsonify({"etiqueta": etiqueta.tagsPlace, "lugares": lugares_list}), 200
+    except Exception as e:
+        return jsonify({"mensaje": f"Error al consultar lugares: {e}"}), 500
+
 
 @jwt_required()
 def eliminar_tags(tag_id):

@@ -76,7 +76,12 @@ def login_usuario(data):
     # Verifica el estado de la membresia premium antes de iniciar sesion
     user.verificar_premium()
     
-    access_token = create_access_token(identity={"sub": user.id, "id_Rol": user.id_Rol, "nombre": user.nombre}) 
+    expires = timedelta(hours=4)
+    access_token = create_access_token(
+        identity=str(user.id),  # Aquí el sub debe ser un string
+        additional_claims={"id_Rol": user.id_Rol, "nombre": user.nombre},
+        expires_delta=expires
+        )    
     return jsonify({"mensaje": "Inicio de sesión exitoso", "token": access_token}), 200
 
 @jwt_required()

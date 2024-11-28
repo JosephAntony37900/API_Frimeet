@@ -10,10 +10,12 @@ class Tag(db.Model):
     __tablename__ = 'tags'
     __table_args__ = {'schema': schema_name}
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(50), nullable=False)
+    tagsEvent = db.Column(db.String(50), nullable=True)
+    tagsPlace = db.Column(db.String(50), nullable=True)
     
-    def __init__(self, nombre):
-        self.nombre = nombre
-        
+    def __init__(self, tagsEvent=None, tagsPlace=None):
+        self.tagsEvent = tagsEvent
+        self.tagsPlace = tagsPlace
+
     def __repr__(self):
-        return f'<Tag {self.name}>'
+        return f'<Tag {self.id}>'
