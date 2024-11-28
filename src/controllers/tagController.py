@@ -30,6 +30,17 @@ def crear_etiquetas(data):
 
     return jsonify(etiquetas_creadas), 201
 
+# Función para convertir ObjectId a string en documentos anidados
+def convert_objectid_to_str(doc):
+    if isinstance(doc, list):
+        return [convert_objectid_to_str(item) for item in doc]
+    elif isinstance(doc, dict):
+        return {k: convert_objectid_to_str(v) for k, v in doc.items()}
+    elif isinstance(doc, ObjectId):
+        return str(doc)
+    else:
+        return doc
+
 # Obtener eventos por etiqueta consultando en MongoDB
 @jwt_required()
 def obtener_eventos_por_etiqueta(tag_id):
@@ -43,7 +54,7 @@ def obtener_eventos_por_etiqueta(tag_id):
         eventos = event_collection.find({"tag": etiqueta.tagsEvent})
         eventos_list = []
         for evento in eventos:
-            evento["_id"] = str(evento["_id"])
+            evento = convert_objectid_to_str(evento)
             eventos_list.append(evento)
         return jsonify({"etiqueta": etiqueta.tagsEvent, "eventos": eventos_list}), 200
     except Exception as e:
@@ -62,11 +73,12 @@ def obtener_lugares_por_etiqueta(tag_id):
         lugares = place_collection.find({"tag": etiqueta.tagsPlace})
         lugares_list = []
         for lugar in lugares:
-            lugar["_id"] = str(lugar["_id"])
+            lugar = convert_objectid_to_str(lugar)
             lugares_list.append(lugar)
         return jsonify({"etiqueta": etiqueta.tagsPlace, "lugares": lugares_list}), 200
     except Exception as e:
         return jsonify({"mensaje": f"Error al consultar lugares: {e}"}), 500
+
 
 
 @jwt_required()
@@ -81,5 +93,5 @@ def eliminar_tags(tag_id):
 @jwt_required()
 def obtener_todas_las_etiquetas():
     etiquetas = Tag.query.all()
-    etiquetas_list = [{"idTag": etiqueta.id, "nombre": etiqueta.nombre} for etiqueta in etiquetas]
+    etiquetas_list = [{"idTag": etiqueta.id, "Tags de eventos": etiqueta.tagsEvent, "Tags de lugares": etiqueta.tagsPlace} for etiqueta in etiquetas]
     return jsonify({"etiquetas": etiquetas_list}), 200
