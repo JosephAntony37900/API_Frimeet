@@ -95,3 +95,17 @@ def obtener_todas_las_etiquetas():
     etiquetas = Tag.query.all()
     etiquetas_list = [{"idTag": etiqueta.id, "Tags de eventos": etiqueta.tagsEvent, "Tags de lugares": etiqueta.tagsPlace} for etiqueta in etiquetas]
     return jsonify({"etiquetas": etiquetas_list}), 200
+
+@jwt_required()
+def obtener_tags_event():
+    # Filtra solo las etiquetas que tienen un valor definido para tagsEvent
+    etiquetas = Tag.query.with_entities(Tag.id, Tag.tagsEvent).filter(Tag.tagsEvent.isnot(None)).all()
+    etiquetas_list = [{"idTag": etiqueta.id, "tagsEvent": etiqueta.tagsEvent} for etiqueta in etiquetas]
+    return jsonify({"tagsEvent": etiquetas_list}), 200
+
+@jwt_required()
+def obtener_tags_place():
+    # Filtra solo las etiquetas que tienen un valor definido para tagsPlace
+    etiquetas = Tag.query.with_entities(Tag.id, Tag.tagsPlace).filter(Tag.tagsPlace.isnot(None)).all()
+    etiquetas_list = [{"idTag": etiqueta.id, "tagsPlace": etiqueta.tagsPlace} for etiqueta in etiquetas]
+    return jsonify({"tagsPlace": etiquetas_list}), 200
