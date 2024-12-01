@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from src.controllers.userController import crear_usuario, crear_usuario_base, login_usuario, obtener_usuario,eliminar_usuario, actualizar_rol_premium, actualizar_usuario, add_reminder, obtener_recordatorios
+from src.controllers.userController import crear_usuario, crear_usuario_base, login_usuario, obtener_usuario,eliminar_usuario, actualizar_rol_premium, actualizar_usuario, add_reminder, obtener_recordatorios, verificar_token
 from flask_jwt_extended import jwt_required
 
 usuario_blueprint = Blueprint('usuarios', __name__)
@@ -50,3 +50,7 @@ def add_reminder_ruta(user_id):
 @jwt_required() 
 def obtener_recordatorios_ruta(user_id): 
     return obtener_recordatorios(user_id)
+
+@usuario_blueprint.route('/verificar-token', methods=['POST']) 
+def verificar_token_ruta(): 
+    return verificar_token()
