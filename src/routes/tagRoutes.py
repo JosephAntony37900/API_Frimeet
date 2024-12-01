@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from src.controllers.tagController import crear_etiquetas, obtener_eventos_por_etiqueta, eliminar_tags, obtener_todas_las_etiquetas, obtener_lugares_por_etiqueta, obtener_tags_event, obtener_tags_place
+from src.controllers.tagController import crear_etiquetas, obtener_eventos_por_etiqueta, eliminar_tags, obtener_todas_las_etiquetas, obtener_lugares_por_etiqueta, obtener_tags_event, obtener_tags_place, obtener_lugar_por_tipo_y_etiquetas
 from flask_jwt_extended import jwt_required
 
 etiqueta_blueprint = Blueprint('etiquetas', __name__)
@@ -39,3 +39,7 @@ def obtener_tags_event_ruta():
 def obtener_tags_place_ruta():
     return obtener_tags_place()
 
+@etiqueta_blueprint.route('/tags/places/filter', methods=['POST'])
+@jwt_required()
+def obtener_lugar_por_tipo_y_etiquetas_ruta():
+    return obtener_lugar_por_tipo_y_etiquetas()

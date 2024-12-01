@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required
 import os
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from random import choice
 
 # Configuración para MongoDB
 mongo_client = MongoClient(os.getenv('MONGODB_URI'))
@@ -40,6 +41,44 @@ def convert_objectid_to_str(doc):
         return str(doc)
     else:
         return doc
+
+# Nueva función para obtener un lugar por tipo y etiquetas
+@jwt_required()
+def obtener_lugar_por_tipo_y_etiquetas():
+    data = request.get_json()
+    tipo = data.get('tipo')
+    etiquetas = data.get('etiquetas', [])
+
+    if not tipo:
+        return jsonify({"mensaje": "El tipo es requerido"}), 400
+
+    try:
+        # Filtrar lugares por tipo
+        lugares = list(place_collection.find({"types": tipo}))
+
+        if not lugares:
+            return jsonify({"mensaje": "No se encontraron lugares para el tipo proporcionado"}), 404
+
+        # Contar coincidencias de etiquetas
+        lugar_etiquetas = []
+        for lugar in lugares:
+            coincidencias = sum(1 for etiqueta in etiquetas if etiqueta in lugar.get('tag', []))
+            lugar_etiquetas.append((lugar, coincidencias))
+
+        # Encontrar el lugar con más coincidencias
+        lugar_etiquetas.sort(key=lambda x: x[1], reverse=True)
+        max_coincidencias = lugar_etiquetas[0][1]
+        lugares_con_max_coincidencias = [lugar for lugar, coincidencias in lugar_etiquetas if coincidencias == max_coincidencias]
+
+        # Seleccionar un lugar aleatorio entre los que tienen más coincidencias
+        lugar_seleccionado = choice(lugares_con_max_coincidencias)
+        lugar_seleccionado = convert_objectid_to_str(lugar_seleccionado)
+
+        return jsonify({"lugar_seleccionado": lugar_seleccionado}), 200
+
+    except Exception as e:
+        return jsonify({"mensaje": f"Error al consultar lugares: {e}"}), 500
+
 
 # Obtener eventos por etiqueta consultando en MongoDB
 @jwt_required()
