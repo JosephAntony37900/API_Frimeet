@@ -1,8 +1,8 @@
 from flask import jsonify, request
 from src.models.user import User, db
 from src.models.userRol import Role
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from datetime import datetime, timedelta
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, decode_token
+from datetime import datetime, timedelta, timezone
 from flask_bcrypt import Bcrypt
 
 bcrypt = Bcrypt()
@@ -204,3 +204,28 @@ def obtener_recordatorios(user_id):
     ]
 
     return jsonify({"recordatorios": recordatorios}), 200
+
+
+def verificar_token():
+    try:
+        data = request.get_json()
+        token = data.get('token', None)
+
+        if not token:
+            return jsonify({"valid": False, "message": "No hay token"}), 401
+
+        # Decodificar el token sin verificar su firma para obtener la información de expiración
+        decoded_token = decode_token(token, allow_expired=True)
+        exp = decoded_token.get("exp", None)
+
+        if not exp:
+            return jsonify({"valid": False, "message": "Token sin información de expiración"}), 401
+
+        # Verificar si el token ha expirado
+        if datetime.fromtimestamp(exp, timezone.utc) < datetime.now(timezone.utc):
+            return jsonify({"valid": False, "message": "Token ha expirado"}), 401
+
+        return jsonify({"valid": True, "message": "Token válido"}), 200
+    except Exception as e:
+        return jsonify({"valid": False, "message": f"Error al verificar token: {e}"}), 401
+
